@@ -23,6 +23,10 @@ from geometry_msgs.msg import Point32
 from image_geometry import PinholeCameraModel
 BASELINE_PERCEPTION = 0.05
 
+KEY_ESC = [27, 1048603]
+KEY_SPACE = [1048608, 32]
+KEY_q = [1048689, 113]
+
 OBJT_LIST = ['book',
              'bottle',
              'cellphone',
@@ -66,9 +70,10 @@ class SceneRecorder():
         self.filename = filename
 
         self.KINECT_OK = False
-        self.camera_topic = "/chest_xtion/depth/points"
-        self.camera_image_topic = "/chest_xtion/rgb/image_color"
-        self.camera_image_info_topic = "/chest_xtion/rgb/camera_info"
+        self.camera_topic = "/head_xtion/depth/points"
+        #self.camera_topic = "/pointcloud"
+        self.camera_image_topic = "/head_xtion/rgb/image_color"
+        self.camera_image_info_topic = "/head_xtion/rgb/camera_info"
                #self.camera_topic = "/camera/depth/points"
         self.kinect_trials = 5
         self.check_kinect()
@@ -164,6 +169,8 @@ class SceneRecorder():
                 r.sleep()
             sub.unregister()
             rospy.loginfo("Got pointcloud!")
+
+            
             
             # call classification service with pointcloud
             service_name = 'segment_and_classify'
@@ -185,12 +192,12 @@ class SceneRecorder():
                 box_locations = []
                 for cloud in response.cloud:
                     assert isinstance(cloud, PointCloud2)
-                    print cloud.fields
+                    #print cloud.fields
                     pc1 = PointCloud()
                     pc1.header = cloud.header
                     # hack the time! dont move the robot :-0
                     pc1.header.stamp = rospy.Time.now()
-                    print type(cloud)
+                    #print type(cloud)
                     pc1.points = [Point32(*p) for p in pc2.read_points(cloud)]
                     #print pc1.points
                     self._tf_listener.waitForTransform(pc1.header.frame_id,
@@ -274,15 +281,15 @@ class SceneRecorder():
                 while labelling:
                     cv.ShowImage("Image window", cv.fromarray(update_display(True)))
                     k = cv.WaitKey(100)
-                    print k
-                    if k == 1048608 : # SPACE:=> Done
+                    #print k
+                    if k in KEY_SPACE : # SPACE:=> Done
                         if any([True if i is None else False for i in labels]):
                             rospy.logwarn("Can't proceed,  unlabled clusters!")
                         else:
                             break
-                    if k == 1048603:  # ESC:=> skip
+                    if k in KEY_ESC:  # ESC:=> skip
                         labelling = False
-                    if k == 1048689:  # q:=> QUit
+                    if k in KEY_q:  # q:=> QUit
                         labelling = False
                         finished = True
                 else:
@@ -334,9 +341,9 @@ class SceneRecorder():
                 while waiting:
                     cv.ShowImage("Image window", cv.fromarray(display_image))
                     k = cv.WaitKey(100)
-                    if k == 1048608 : # SPACE:=> Done
+                    if k in KEY_SPACE : # SPACE:=> Done
                         break
-                    if k == 1048603:  # ESC:=> skip
+                    if k in KEY_ESC:  # ESC:=> skip
                         waiting = False
                 else:
                     print "Scene discarded"
@@ -465,10 +472,10 @@ class SceneRecorder():
             while waiting:
                 cv.ShowImage("Image window", cv.fromarray(display_image))
                 k = cv.WaitKey(100)
-                if k == 1048608 : # SPACE:=> Done
+                if k in KEY_SPACE : # SPACE:=> Done
                     key = ""
                     break
-                if k == 1048603:  # ESC:=> skip
+                if k in KEY_ESC:  # ESC:=> skip
                     waiting = False
             else:
                 break
